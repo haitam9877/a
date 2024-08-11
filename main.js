@@ -16,19 +16,30 @@ const users = fs
     };
   });
 
-async function openTabAndFillForm(driver, user, index) {
+async function openTab(driver, index) {
+  // فتح علامة تبويب جديدة
+  await driver.executeScript("window.open();");
+  const tabs = await driver.getAllWindowHandles();
+  await driver.switchTo().window(tabs[tabs.length - 1]);
+
+  // فتح الموقع في علامة التبويب الجديدة
+  await driver.get("https://minha.anem.dz/pre_inscription"); // قم بتغيير الرابط إلى الرابط الفعلي
+
+  // طباعة رسالة في الكونسول
+  console.log(`Opened tab for user ${index + 1}`);
+}
+
+async function fillForm(driver, user, index) {
+  // التبديل إلى التبويب المطلوب
+  const tabs = await driver.getAllWindowHandles();
+  await driver.switchTo().window(tabs[index + 1]);
+
   // طباعة رسالة في الكونسول
   console.log(
     `Processing user ${index + 1}: numeroWassit = ${
       user.numeroWassit
     }, numeroPieceIdentite = ${user.numeroPieceIdentite}, ccp = ${user.ccp}`
   );
-
-  const tabs = await driver.getAllWindowHandles();
-  await driver.switchTo().window(tabs[tabs.length - 1]);
-
-  // فتح الموقع في علامة التبويب الجديدة
-  await driver.get("https://minha.anem.dz/pre_inscription"); // قم بتغيير الرابط إلى الرابط الفعلي
 
   // تعبئة الحقل الأول
   await driver.findElement(By.id("numeroWassit")).sendKeys(user.numeroWassit);
@@ -41,50 +52,16 @@ async function openTabAndFillForm(driver, user, index) {
   // الضغط على الزر الأول
   await driver.findElement(By.id("mui-5")).click();
 
-  // الانتظار حتى يظهر الزر المطلوب "المواصلة"
+  // الانتظار حتى يظهر الزر "المواصلة" ثم الضغط عليه
   const continueButton = await driver.wait(
-    until.elementLocated(
-      By.xpath(
-        "//button[contains(@class, 'MuiButtonBase-root') and contains(text(), 'المواصلة')]"
-      )
-    ),
-    10000
+    until.elementLocated(By.xpath("//button[contains(text(), 'المواصلة')]")),
+    10000 // الانتظار لمدة 10 ثوانٍ كحد أقصى
   );
 
   // الضغط على الزر "المواصلة"
   await continueButton.click();
 
-  // الانتظار حتى تظهر العناصر المطلوبة
-  const pElement = await driver.wait(until.elementLocated(By.id("p")), 10000);
-  const nElement = await driver.wait(until.elementLocated(By.id("n")), 10000);
-  const cElement = await driver.wait(until.elementLocated(By.id("c")), 10000);
-
-  // نسخ النص من العناصر المحددة
-  const bElement = await driver.findElement(
-    By.xpath(
-      '//span[contains(@class, "MuiTypography-root") and contains(@class, "MuiTypography-body3Fr")]'
-    )
-  );
-  const nElementText = await driver.findElement(
-    By.xpath(
-      '//span[contains(@class, "MuiTypography-root") and contains(@class, "MuiTypography-body3Fr")]'
-    )
-  );
-
-  // الحصول على النص من العناصر
-  const bText = await driver.executeScript(
-    "return arguments[0].textContent;",
-    bElement
-  );
-  const nText = await driver.executeScript(
-    "return arguments[0].textContent;",
-    nElementText
-  );
-
-  // إدخال النص في الحقول المخصصة
-  await pElement.sendKeys(bText.trim()); // إزالة المسافات الزائدة
-  await nElement.sendKeys(nText.trim()); // إزالة المسافات الزائدة
-  await cElement.sendKeys(user.ccp);
+  // هنا يمكنك إضافة أي إجراءات إضافية أخرى إذا لزم الأمر
 }
 
 async function run() {
@@ -96,7 +73,12 @@ async function run() {
   try {
     // افتح علامة تبويب لكل شخص في القائمة
     for (let i = 0; i < users.length; i++) {
-      await openTabAndFillForm(driver, users[i], i);
+      await openTab(driver, i);
+    }
+
+    // بعد فتح جميع التبويبات، املأ النماذج في كل تبويب
+    for (let i = 0; i < users.length; i++) {
+      await fillForm(driver, users[i], i);
     }
 
     // التبديل إلى أول علامة تبويب بعد الانتهاء
