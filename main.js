@@ -8,11 +8,10 @@ const users = fs
   .split("\n")
   .filter((line) => line.trim() !== "") // تجاهل الأسطر الفارغة
   .map((line) => {
-    const [numeroWassit, numeroPieceIdentite, ccp] = line.split(",");
+    const [numeroWassit, numeroPieceIdentite] = line.split(",");
     return {
       numeroWassit: numeroWassit.trim(),
       numeroPieceIdentite: numeroPieceIdentite.trim(),
-      ccp: ccp.trim(),
     };
   });
 
@@ -26,7 +25,7 @@ async function openTab(driver, index) {
   await driver.get("https://minha.anem.dz/pre_inscription"); // قم بتغيير الرابط إلى الرابط الفعلي
 
   // طباعة رسالة في الكونسول
-  console.log(`Opened tab for user ${index + 1}`);
+  console.log(`Opened tab ${index + 1}`);
 }
 
 async function fillForm(driver, user, index) {
@@ -35,11 +34,7 @@ async function fillForm(driver, user, index) {
   await driver.switchTo().window(tabs[index + 1]);
 
   // طباعة رسالة في الكونسول
-  console.log(
-    `Processing user ${index + 1}: numeroWassit = ${
-      user.numeroWassit
-    }, numeroPieceIdentite = ${user.numeroPieceIdentite}, ccp = ${user.ccp}`
-  );
+  console.log(`Filling form in tab ${index + 1}`);
 
   // تعبئة الحقل الأول
   await driver.findElement(By.id("numeroWassit")).sendKeys(user.numeroWassit);
@@ -52,14 +47,28 @@ async function fillForm(driver, user, index) {
   // الضغط على الزر الأول
   await driver.findElement(By.id("mui-5")).click();
 
-  // الانتظار حتى يظهر الزر "المواصلة" ثم الضغط عليه
-  const continueButton = await driver.wait(
-    until.elementLocated(By.xpath("//button[contains(text(), 'المواصلة')]")),
+  // الانتظار حتى يظهر الزر "تغيير موعد المقابلة" ثم الضغط عليه
+  const changeAppointmentButton = await driver.wait(
+    until.elementLocated(
+      By.xpath("//button[contains(text(), 'تغيير موعد المقابلة')]")
+    ),
     10000 // الانتظار لمدة 10 ثوانٍ كحد أقصى
   );
 
-  // الضغط على الزر "المواصلة"
-  await continueButton.click();
+  // الضغط على الزر "تغيير موعد المقابلة"
+  await changeAppointmentButton.click();
+
+  // الانتظار حتى يظهر الشاك بوكس "agreeToPolicies"
+  if (index === 0) {
+    // الضغط على الشاك بوكس فقط في التبويب الأول
+    const checkBox = await driver.wait(
+      until.elementLocated(By.name("agreeToPolicies")),
+      10000 // الانتظار لمدة 10 ثوانٍ كحد أقصى
+    );
+
+    // الضغط على الشاك بوكس
+    await checkBox.click();
+  }
 
   // هنا يمكنك إضافة أي إجراءات إضافية أخرى إذا لزم الأمر
 }
